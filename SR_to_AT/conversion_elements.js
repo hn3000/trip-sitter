@@ -186,9 +186,9 @@ module.exports = {
       var subPosition = new Object()
 
       var XY = conversion_math.calcXY(closest[0], closest[1], true)
-      subPosition.x = XY.x * 2 / 3
-      subPosition.y = XY.y * 2 / 3
-      subPosition.z = "unused"
+      subPosition.x = XY.x;
+      subPosition.y = XY.y;
+      subPosition.z = 0;
 
       event.subPositions.push(subPosition)
     }
@@ -200,7 +200,7 @@ module.exports = {
 
     // clone base element
     var supportEvent = JSON.parse(JSON.stringify(event))
-    var offsetX = 0.15
+    var offsetX = 0.10
     var ribbon = event.gemType == "ribbon"
 
     // supportEvent will be left, the original event right
