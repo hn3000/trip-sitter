@@ -1,3 +1,18 @@
+# This Fork
+
+I forked this to work on the conversion from SR to AT, which still has some 
+issues:
+
+- coordinates were not mapped well (mostly fixed)
+- perfectly normal rails turn into very weird ribbons
+  The main problem is that SR and AT have very different conceptions of time,
+  and while rails are specified in milliseconds since the start of the track,
+  I'm not sure of the possible granularity of the segments. Ribbons on the 
+  other hand are specified in fractions of a beat. To fix the conversion, every
+  vertex on a rail must be translated into a vertex on a ribbon. Right now
+  that does not seem to be the case and the translation code is not very easy
+  to follow, unfortunately, mainly because the problem is not easy to solve.
+
 # Disclaimer
 * This project is not affiliated with AudioTrip, SynthRiders, their respective communities or any other third party, especially any modding community.
 * AudioTrip's and SynthRiders' file formats are readable plain text. This tool is not breaking any sort of protective measures.
