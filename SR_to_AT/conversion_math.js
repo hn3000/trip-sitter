@@ -16,7 +16,7 @@ module.exports = {
 
     // 3 decimal places -> microseconds. Very precise
     // 0 decimal places -> milliseconds. Precise enough
-    var precision = 0
+    var precision = 1;
 
     // calculate the ms per beat
     var beat_interval = (60000 / bpm).toFixed(precision)
@@ -46,6 +46,7 @@ module.exports = {
     }
 
     if (reduced[0] == reduced[1]) {
+      console.log(`both sides equal: ${reduced[0]} / ${reduced[1]}`);
       reduced[0] = 0
       reduced[1] = 1
     }
@@ -66,55 +67,31 @@ module.exports = {
     return (ms / 1000) * 20
   },
 
-  calcXY: function calcXY(x, y, OnlyOffset = false) {
+  calcXY: function calcXY(srX, srY, relative = false) {
 
     /*
       This function converts the coordinates of SynthRiders to AudioTrip
     */
-
-
-
     /*
       (SR) The center of the arena is (0|0).
-      (AT) The center of the arena is (0|1.38), so we need to add Ashley's height to the Y for correct coordinates
-    
-      Synthrider min/max positional values
-      X: +- 1.0
-      Y: +- 0.7
+      (AT) The center of the arena is (0|1.1) (measured by directly comparing SR choreo and AT editor)
 
-      AudioTrip min/max positional values. 
-      X: +- 1.5
-      Y: 0, 2.6
+      Both seem to measure in meters, SR is centered around the players 
+      breastbone, AT has 0,0 at the player's feet.
 
-      The X-Coordinate can roughly be translated via f(x) = 1.5x
-      f(-1) = 1.5 * -1 = -1.5
-      f( 0) = 1.5 *  0 =  0
-      f( 1) = 1.5 *  1 =  1.5
+      x_at = x_sr
+      y_at = y_sr + 1.1
 
-      The Y-Coordinate can roughly  be translated via g(y) = 1.8y + 1.38
-      g(-0.7) = 1.8 * -0.7 + 1.38 = 0.12
-      g( 0  ) = 1.8 *  0   + 1.38 = 1.38
-      g( 0.7) = 1.8 *  0.7 + 1.38 = 2.64
-
-      Special thanks to https://www.desmos.com/calculator ;)
-
-      It turns out that the formulars are correct, but to achieve comfortable spacing, they needed some tweaking. 
-      - The variable (x,y) changes the spacing between gems
-      - for g(y), the last part tweaks the Y-coordinates point of reference
-
-      The following are the final formulars that seem good:
-      f(x) = 0.7x
-      g(y) = 0.8y + 1.2
     */
 
-    var resultX = (0.7*x).toFixed(2)
-    var resultY = (0.6*y + (OnlyOffset ? 0.0 : 1.2)).toFixed(2)
+    var atX = +((1*srX).toFixed(2))
+    var atY = +((1*srY + (relative ? 0.0 : 1.1)).toFixed(2))
 
     //console.log("(" + (x>=0 ? " " : "") + x + " |" + (y>=0 ? " " : "") + y + ")\t->\t(" + (resultX>=0 ? " " : "") + resultX + "|" + (resultY>=0 ? " " : "") + resultY + ")")
 
     return {
-      "x": resultX,
-      "y": resultY
+      x: atX,
+      y: atY
     }
   },
 
