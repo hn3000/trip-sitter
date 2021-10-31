@@ -58,7 +58,7 @@ module.exports = {
     metadata.custom = true
     metadata.authorID_SR = json.Beatmapper
     metadata.authorID = {
-      displayName: "Mapped by " + json.Beatmapper + " (converted from SynthRiders)"
+      displayName: "" + json.Beatmapper + " (SR conversion)"
     }
     metadata.songID = ""
     metadata.koreography = { "instanceID": 0 }
@@ -224,7 +224,7 @@ module.exports = {
     questWrapper.questIsConnected().then(data => {
       questWrapper.copyToQuest(path, audioFile, "AT")
       questWrapper.copyToQuest(path, atsFile, "AT")
-    })
+    }, () => {}); // ignore rejection
 
   },
 }
