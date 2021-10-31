@@ -16,7 +16,9 @@
   "scripts": {
     "start": "electron .",
     "postinstall": "electron-builder install-app-deps",
-    "build": "electron-builder --windows",
+    "build": "electron-builder --windows --mac",
+    "build:windows": "electron-builder --windows",
+    "build:mac": "electron-builder --mac",
     "release": "electron-builder --windows --publish always"
   },
   "author": "Sascha Knott",
