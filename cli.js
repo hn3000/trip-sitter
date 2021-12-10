@@ -29,7 +29,7 @@ function convertFiles(filespecs) {
   });
 }
 
-async function convertSingleFile(filename) {
+async function convertSingleFile(filename, openFolder) {
   const converter = require('./SR_to_AT/mainlogic');
   let cleanup = [];
   try {
@@ -51,7 +51,7 @@ async function convertSingleFile(filename) {
       fs.mkdirSync(outputDir, { recursive: true });
 
       // deploy ats and ogg
-      await converter.deployToGame(tmpDir, outputDir, outputDir, mapper);
+      await converter.deployToGame(tmpDir, outputDir, outputDir, mapper, openFolder);
       console.log(`converted ${filename}`);
     }
   } finally {

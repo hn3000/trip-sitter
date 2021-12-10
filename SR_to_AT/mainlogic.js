@@ -205,7 +205,7 @@ module.exports = {
     return choreographies
   },
 
-  deployToGame: async function deployToGame(path, gameDir, fallbackDir, mapper) {
+  deployToGame: async function deployToGame(path, gameDir, fallbackDir, mapper, openFolder) {
 
     var audioFile = fs.readdirSync(path).filter(function (file) { return file.match(".*\.ogg") })[0]
     var atsFile = fs.readdirSync(path).filter(function (file) { return file.match(".*\.ats") })[0]
@@ -214,11 +214,15 @@ module.exports = {
     if (fs.existsSync(gameDir)) {
       fs.copyFileSync(path + audioFile, gameDir  + mapper + "_" + audioFile)
       fs.copyFileSync(path + atsFile, gameDir + mapper + "_" + atsFile)
-      this.openInExplorer(gameDir)
+      if (openFolder) {
+        this.openInExplorer(gameDir)
+      }
     } else {
       fs.copyFileSync(path + audioFile, fallbackDir + mapper + "_" + audioFile)
       fs.copyFileSync(path + atsFile, fallbackDir + mapper + "_" + atsFile)
-      this.openInExplorer(fallbackDir)
+      if (openFolder) {
+        this.openInExplorer(fallbackDir)
+      }
     }    
 
     var questWrapper = require('../utils/questWrapper')
