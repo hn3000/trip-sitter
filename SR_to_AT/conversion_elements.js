@@ -112,7 +112,7 @@ module.exports = {
 
     event.position.z = 0
 
-    event.subPositions = new Array()
+    event.subPositions = []
 
     // if there are no segments, the event type is gem and we are finished
     if (currentElement.Segments == null) {
@@ -123,6 +123,103 @@ module.exports = {
     // otherwise, this is a ribbon
     event.type += 2
     event.gemType = "ribbon"
+
+
+    var first = {
+      x: currentElement.Position[0],
+      y: currentElement.Position[1],
+      z: 0,
+      t: conversion_math.calcMSFromZ(currentElement.Position[2]),
+    };
+
+    // map Segments to subPosition-like structure
+    var segments = currentElement.Segments.map(function(o) { 
+      return ({ 
+        x: o[0] - first.x,
+        y: o[1] -first.y,
+        z: 0,
+        t: conversion_math.calcMSFromZ(o[2])
+      });
+    });
+
+    segments.push({...first, x: 0, y: 0});
+
+    segments.sort(function(a,b) { return a.t - b.t; });
+
+    var start = Math.round(conversion_math.calcMSFromZ(currentElement.Position[2]));
+    var end = segments[segments.length - 1].t;
+    var length = end - start;
+    var gaps = (segments.length-1);
+    var deltas = {};
+    var minDelta = Number.MAX_SAFE_INTEGER;
+    var maxDelta = 0;
+    for (var i = 1, n = segments.length; i < n; ++i) {
+      var delta = Math.round(segments[i].t - segments[i-1].t);
+      segments[i].delta = delta;
+      segments[i].div = Number((60000 / (json.bpm * delta)).toFixed(3));
+
+      if (null != deltas[delta]) {
+        deltas[delta] += 1;
+      } else {
+        deltas[delta] = 1;
+      }
+      minDelta = Math.min(minDelta, delta);
+      maxDelta = Math.max(maxDelta, delta);
+    }
+    var medDelta = 0;
+    var deltasByFreq = Object.keys(deltas).sort(function(a,b) { return deltas[b]-deltas[a]});
+    if (deltasByFreq.length) {
+      medDelta = deltasByFreq[0];
+    }
+
+    var divRaw = 60000 / (json.bpm * medDelta);
+    var div = Math.round(divRaw);
+
+    if (Math.abs(divRaw - div) > 0.1) {
+      console.warn(`ribbon uses non-integer divisions`, divRaw, Math.abs(length - medDelta*gaps), segments);
+    }
+
+    if (medDelta != minDelta) {
+      console.warn(`medDelta ${medDelta} != minDelta ${minDelta}; maxDelta ${maxDelta}`);
+      console.warn(`divRaw: ${divRaw}; minDiv ${60000 / (json.bpm * maxDelta)}; maxDiv ${60000 / (json.bpm * minDelta)}`)
+      console.warn(segments);
+      var i = 1, n = segments.length;
+      while (i < n) {
+        if ((segments[i].delta - 5) > minDelta) {
+          var a = segments[i-1]; 
+          var b = segments[i];
+          
+          var j = 1, m = Math.round(b.delta / minDelta);
+          if (j < m) {
+            // remove b
+            segments.splice(i, 1);
+            --i;
+            --n;
+
+            for (; j <= m; ++j) {
+              var pos = j / m;
+              var x = a.x + pos * (b.x-a.x) - segments[i].x;
+              var y = a.y + pos * (b.y-a.y) - segments[i].x;
+              segments.splice(i, 0, { x, y, z: 0 });
+              ++i;
+              ++n;
+            }
+          } else {
+            ++i;
+          }
+        } else {
+          ++i;
+        }
+      }
+    }
+
+    event.beatDivision = div;
+    segments[0].x = segments[0].y = 0;
+    event.subPositions = segments;
+
+    /*
+
+
 
     // add starting point of the spline
     event.subPositions.push(
@@ -192,6 +289,7 @@ module.exports = {
 
       event.subPositions.push(subPosition)
     }
+    */
 
     return event;
   },
@@ -211,21 +309,6 @@ module.exports = {
     event.position.x += offsetX
     event.type = ribbon ? 4 : 2
     event.hand = "right (split)"
-
-    // supportEvent will be left, the original event right
-    for (var subPosition in event.subPositions) {
-
-      var currentSubPosition = event.subPositions[subPosition]
-
-      currentSubPosition.x += offsetX
-    }
-
-    for (var subPosition in supportEvent.subPositions) {
-
-      var currentSubPosition = supportEvent.subPositions[subPosition]
-
-      currentSubPosition.x -= offsetX
-    }
 
     return supportEvent
 
