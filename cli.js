@@ -38,9 +38,9 @@ async function convertSingleFile(filename, openFolder) {
     cleanup.push(() => {fs.rmdirSync(tmpDir, { recursive: true, maxRetries: 2 })});
     const result = await converter.convertFile(filename, tmpDir);
     if (result.error) {
-      console.warn(`conversion failed: ${filename}: ${result.message}`);
+      console.warn(`conversion failed: ${filename}: ${result.message}  ${result.error}`);
     } else {
-      console.info(`success: `, result);
+      console.info(`success: ${result.data.metadata.title} by ${result.data.metadata.authorID_SR}`);
       var mapper = result.data.metadata.authorID_SR;
       var title = result.data.metadata.title;
       
