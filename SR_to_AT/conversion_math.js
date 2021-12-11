@@ -34,8 +34,8 @@ module.exports = {
       // convert the remainder to a fracture of 1, which return an inexact float value (eg. 0.7499~)
       var remainderRelative = remainder / beat_interval
 
-      // round the inexact remainder to the nearest 1/16th 
-      var possibleFractionsPerBeat = 32
+      // round the inexact remainder to the nearest 1/64th 
+      var possibleFractionsPerBeat = 64
       var roundedNum = (Math.round(remainderRelative * possibleFractionsPerBeat) / possibleFractionsPerBeat).toFixed(5)
 
       // multiply by "possibleFractionsPerBeat" to convert the fracture of 1 to a numerator for a denominator of 16
@@ -46,9 +46,10 @@ module.exports = {
     }
 
     if (reduced[0] == reduced[1]) {
-      console.log(`both sides equal: ${reduced[0]} / ${reduced[1]}`);
+      //console.log(`both sides equal: ${reduced[0]} / ${reduced[1]}`);
       reduced[0] = 0
       reduced[1] = 1
+      beat += 1
     }
 
     return {
