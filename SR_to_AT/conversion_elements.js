@@ -166,41 +166,48 @@ module.exports = {
       minDelta = Math.min(minDelta, delta);
       maxDelta = Math.max(maxDelta, delta);
     }
-    var medDelta = 0;
+    var mfrqDelta = 0;
     var deltasByFreq = Object.keys(deltas).sort(function(a,b) { return deltas[b]-deltas[a]});
     if (deltasByFreq.length) {
-      medDelta = deltasByFreq[0];
+      mfrqDelta = deltasByFreq[0];
     }
 
-    var divRaw = 60000 / (json.bpm * medDelta);
+    var divR = (delta) => 60000 / (json.bpm * delta);
+
+    var divRaw = divR(mfrqDelta);
     var div = Math.round(divRaw);
 
     if (Math.abs(divRaw - div) > 0.1) {
-      console.warn(`ribbon uses non-integer divisions`, divRaw, Math.abs(length - medDelta*gaps), segments);
+      console.warn(`ribbon uses non-integer divisions`, divRaw, divR(minDelta), divR(maxDelta), Math.abs(length - minDelta*gaps), Math.abs(length - maxDelta*gaps));
+      console.warn(`all deltas(*): ${segments.map(s => s.delta).join(',')}`);
+      div = Number(divRaw.toFixed(1));
     }
 
-    if (medDelta != minDelta) {
-      console.warn(`medDelta ${medDelta} != minDelta ${minDelta}; maxDelta ${maxDelta}`);
+    if (different(maxDelta, minDelta, 0.02)) {
+      divRaw = 60000 / (json.bpm * minDelta);
+      div = Math.round(divRaw);
+      console.warn(`maxDelta ${maxDelta} != minDelta ${minDelta}; mfrqDelta ${mfrqDelta}`);
       console.warn(`divRaw: ${divRaw}; minDiv ${60000 / (json.bpm * maxDelta)}; maxDiv ${60000 / (json.bpm * minDelta)}`)
-      console.warn(segments);
+      console.warn(`old deltas(0): ${segments.map(s => s.delta).join(',')}`);
       var i = 1, n = segments.length;
       while (i < n) {
-        if ((segments[i].delta - 5) > minDelta) {
+        if (greater(segments[i].delta, minDelta, 0.04)) {
           var a = segments[i-1]; 
           var b = segments[i];
           
-          var j = 1, m = Math.round(b.delta / minDelta);
+          var j = 1, m = Math.floor(b.delta / minDelta);
           if (j < m) {
             // remove b
             segments.splice(i, 1);
-            --i;
+            //console.warn(`new deltas(1): ${segments.map(s => s.delta).join(',')}`);
             --n;
-
+            
             for (; j <= m; ++j) {
               var pos = j / m;
-              var x = a.x + pos * (b.x-a.x) - segments[i].x;
-              var y = a.y + pos * (b.y-a.y) - segments[i].x;
-              segments.splice(i, 0, { x, y, z: 0 });
+              var x = a.x + pos * (b.x-a.x) - segments[i-1].x;
+              var y = a.y + pos * (b.y-a.y) - segments[i-1].x;
+              segments.splice(i, 0, { x, y, z: 0, delta: minDelta });
+              //console.warn(`new deltas(2): ${segments.map(s => s.delta).join(',')}`);
               ++i;
               ++n;
             }
@@ -211,7 +218,9 @@ module.exports = {
           ++i;
         }
       }
+      //console.warn(`new deltas(3): ${segments.map(s => s.delta).join(',')}`);
     }
+
 
     event.beatDivision = div;
     segments[0].x = segments[0].y = 0;
@@ -298,7 +307,7 @@ module.exports = {
 
     // clone base element
     var supportEvent = JSON.parse(JSON.stringify(event))
-    var offsetX = 0.10
+    var offsetX = 0.01
     var ribbon = event.gemType == "ribbon"
 
     // supportEvent will be left, the original event right
@@ -314,4 +323,20 @@ module.exports = {
 
   },
 
+}
+
+function different(a, b, relEpsilon) {
+  const delta = Math.abs(a - b);
+  const epsilon = delta / Math.max(a,b);
+  const result = relEpsilon < epsilon;
+  result && console.warn(`too different: ${a} != ${b} by ${epsilon} >= ${relEpsilon}`);
+  return result;
+}
+
+function greater(a, b, relEpsilon) {
+  const delta = a - b;
+  const epsilon = delta / a;
+  const result = relEpsilon < epsilon;
+  //!result && console.warn(`not greater: ${a} > ${b} by ${epsilon} >= ${relEpsilon}`);
+  return result;
 }
