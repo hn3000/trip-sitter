@@ -146,10 +146,19 @@ module.exports = {
       var oldFormat = json.UsingBeatMeasure == undefined || !json.UsingBeatMeasure
 
       for (var crouchElement in Crouchs) {
-        var ms = Crouchs[crouchElement]
+        var crouch = Crouchs[crouchElement]
 
+        var position, time, ms = Number(crouch)
+        if (isFinite(ms)) {
+          position = [0.0, 0.0, conversion_math.calcZFromMS(ms)]
+          time = ms
+        } else {
+          position = crouch.position
+          time = crouch.time
+        }
         var currentCrouch = {
-          "position": [0.0, 0.0, conversion_math.calcZFromMS(ms)]
+          "position": position,
+          "time": time
         }
 
         if (oldFormat) {
@@ -160,12 +169,15 @@ module.exports = {
 
         event.newline = true
 
-        choreography.data.events.push(event)
+        if (event.sortkey != null) {
+          // ignore barriers without a time
+          choreography.data.events.push(event)
+        }
       }
 
       for (var slideElement in Slides) {
         var currentSlide = Slides[slideElement]
-
+        var time = currentSlide.time;
         if (oldFormat) {
           currentSlide = conversion_math.convertOldToNewFormat(currentSlide.time, currentSlide.slideType)
         } else {
@@ -175,27 +187,35 @@ module.exports = {
         var event = conversion_elements.generateBarrier(currentSlide, json)
 
         event.newline = true
-
-        choreography.data.events.push(event)
+        if (event.sortkey != null) {
+          // ignore barriers without a time
+          choreography.data.events.push(event)
+        }
       }
 
       choreography.data.events.sort(function (a, b) {
-        return a.bloggi - b.bloggi;
+        return a.sortkey - b.sortkey;
       })
 
       choreographies.list.push(choreography)
 
-      for (var elem in choreographies.list) {
+      for (let choreo of choreographies.list) {
+        let sortkey = -1;
 
-        for (var gem in choreographies.list[elem].data.events) {
+        console.log(`cleaning up choreo ${choreo.header.name} with ${choreo.data.events.length} entries`)
 
-          var currentGem = choreographies.list[elem].data.events[gem]
+        for (let currentGem of choreo.data.events) {
 
+          if (null == currentGem.sortkey || currentGem.sortkey < sortkey) {
+            const {time:t, sortkey:s,type:k,hand:h,gemType:g} = currentGem; 
+            console.log(`found out-of-order event: ${JSON.stringify({t,s,k,g,h})}`)
+          }
+          sortkey = currentGem.sortkey
           // remove convenience attributes
-          delete currentGem.bloggi
-          delete currentGem.gemType
+          //delete currentGem.sortkey
+          //delete currentGem.gemType
+          //delete currentGem.hand
           delete currentGem.newline
-          delete currentGem.hand
 
           //logGem(currentGem)
         }

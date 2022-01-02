@@ -3,7 +3,7 @@ module.exports = {
   generateCrouch: function generateCrouch(currentElement, json) {
 
     // modify element to have an additional "custom" slideType
-    currentElement.slideType = 5
+    currentElement.slideType = -1
 
     // business as usual
     return this.generateBarrier(currentElement, json)
@@ -50,7 +50,7 @@ module.exports = {
         event.position.y = 0.2
         // barrier left diagonal                
         break
-      case 5:
+      case -1:
         // only possible via generateCrouch()
         event.hand = "crouch"
         event.position.y = 0.4 // a bit higher than shoulder level
@@ -58,16 +58,30 @@ module.exports = {
         break;
     }
 
+    var time = currentElement.position[2]
+
+    if (!isFinite(time)) {
+      time = conversion_math.calcZFromMS(currentElement.time)
+    }
+
     event.hasGuide = false
-    event.bloggi = currentElement.position[2]
+    event.sortkey = time
     event.beatDivision = 2
     event.broadcastEventID = 0
+    
+    {
+      const { time, position, slideType } = currentElement;
+      event.src = { time, position, slideType };
+    }
 
-    var ms = conversion_math.calcMSFromZ(currentElement.position[2])
-    event.time = conversion_math.calcBeatFromMillis(ms, json.bpm, json.offSetMS)
+    var ms = conversion_math.calcMSFromZ(time)
+    event.time = conversion_math.calcBeatFromMillis(ms, json.bpm, json.offSetMS || 0)
 
     event.gemType = "barrier"
 
+    if (event.time.beat == null) {
+      console.log(`converted barrier at ${JSON.stringify(event.time)}`, event, currentElement);
+    }
     return event;
   },
 
@@ -99,9 +113,9 @@ module.exports = {
     }
 
     event.hasGuide = false
-    event.bloggi = currentElement.Position[2]
-    event.beatDivision = 2
-    event.broadcastEventID = 0
+    event.sortkey = currentElement.Position[2]
+    //event.beatDivision = 2
+    //event.broadcastEventID = 0
 
     var convertedCoords = conversion_math.calcXY(currentElement.Position[0].toFixed(2), currentElement.Position[1].toFixed(2))
 
@@ -117,6 +131,8 @@ module.exports = {
     // if there are no segments, the event type is gem and we are finished
     if (currentElement.Segments == null) {
       event.gemType = "gem"
+      //event.hasGuide = true
+
       return event;
     }
 
@@ -174,21 +190,25 @@ module.exports = {
 
     var divR = (delta) => 60000 / (json.bpm * delta);
 
-    var divRaw = divR(mfrqDelta);
+    var divRaw = divR(minDelta);
     var div = Math.round(divRaw);
 
+    var beatDivisionPrecision = 0;
+
     if (Math.abs(divRaw - div) > 0.1) {
-      console.warn(`ribbon uses non-integer divisions`, divRaw, divR(minDelta), divR(maxDelta), Math.abs(length - minDelta*gaps), Math.abs(length - maxDelta*gaps));
-      console.warn(`all deltas(*): ${segments.map(s => s.delta).join(',')}`);
-      div = Number(divRaw.toFixed(1));
+      //console.warn(`ribbon uses non-integer divisions`, divRaw, divR(minDelta), divR(maxDelta), Math.abs(length - minDelta*gaps), Math.abs(length - maxDelta*gaps));
+      //console.warn(`all deltas(*): ${segments.map(s => s.delta).join(',')}`);
+      beatDivisionPrecision = 1;
+      div = Number(divRaw.toFixed(beatDivisionPrecision));
+      console.warn(`non-integer beatDivision in ribbon. ${segments.length} segments, ${div} @${(start/1e3).toFixed(0)}s / beat ${event.time.beat}`);
     }
 
     if (different(maxDelta, minDelta, 0.02)) {
       divRaw = 60000 / (json.bpm * minDelta);
-      div = Math.round(divRaw);
-      console.warn(`maxDelta ${maxDelta} != minDelta ${minDelta}; mfrqDelta ${mfrqDelta}`);
-      console.warn(`divRaw: ${divRaw}; minDiv ${60000 / (json.bpm * maxDelta)}; maxDiv ${60000 / (json.bpm * minDelta)}`)
-      console.warn(`old deltas(0): ${segments.map(s => s.delta).join(',')}`);
+      div = Number(divRaw.toFixed(beatDivisionPrecision));
+      //console.warn(`maxDelta ${maxDelta} != minDelta ${minDelta}; mfrqDelta ${mfrqDelta}`);
+      //console.warn(`divRaw: ${divRaw}; minDiv ${60000 / (json.bpm * maxDelta)}; maxDiv ${60000 / (json.bpm * minDelta)}`)
+      //console.warn(`old deltas(0): ${segments.map(s => s.delta).join(',')}`);
       var i = 1, n = segments.length;
       while (i < n) {
         if (greater(segments[i].delta, minDelta, 0.04)) {
@@ -329,7 +349,7 @@ function different(a, b, relEpsilon) {
   const delta = Math.abs(a - b);
   const epsilon = delta / Math.max(a,b);
   const result = relEpsilon < epsilon;
-  result && console.warn(`too different: ${a} != ${b} by ${epsilon} >= ${relEpsilon}`);
+  //result && console.warn(`too different: ${a} != ${b} by ${epsilon} >= ${relEpsilon}`);
   return result;
 }
 

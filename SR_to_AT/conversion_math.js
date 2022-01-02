@@ -14,48 +14,38 @@ module.exports = {
 
   calcBeatFromMillis: function calcBeatFromMillis(ms, bpm, offSetMS) {
 
-    // 3 decimal places -> microseconds. Very precise
-    // 0 decimal places -> milliseconds. Precise enough
-    var precision = 1;
-
     // calculate the ms per beat
-    var beat_interval = (60000 / bpm).toFixed(precision)
-
+    var beat_interval = 60000 / bpm
+  
     // calculate the beat of the input ms (including offSet)
-    var beat = Math.floor((ms-offSetMS) / beat_interval)
-
+    var beatRaw = (ms-offSetMS) / beat_interval;
+    var beat = Math.floor(beatRaw);
+  
     // now calculate the remainder to get the sub-beat
-    var remainder = ms % beat_interval;
+    var remainder = (beatRaw - beat);//ms % beat_interval;
+  
 
-    // default to the "whole beat" specification
-    var reduced = [0, 1]
+  // convert the remainder to a fracture of 1, which return an inexact float value (eg. 0.7499~)
+    var remainderRelative = remainder // / beat_interval
 
-    if (remainder != 0) {
-      // convert the remainder to a fracture of 1, which return an inexact float value (eg. 0.7499~)
-      var remainderRelative = remainder / beat_interval
+    // round the inexact remainder to the nearest 1/64th 
+    var possibleFractionsPerBeat = 64
+    var numerator = Math.round(remainderRelative * possibleFractionsPerBeat);
 
-      // round the inexact remainder to the nearest 1/64th 
-      var possibleFractionsPerBeat = 64
-      var roundedNum = (Math.round(remainderRelative * possibleFractionsPerBeat) / possibleFractionsPerBeat).toFixed(5)
-
-      // multiply by "possibleFractionsPerBeat" to convert the fracture of 1 to a numerator for a denominator of 16
-      var numerator = roundedNum * possibleFractionsPerBeat
-
-      // reduce to the smallest denominator by finding the 
-      var reduced = this.reduce(numerator, possibleFractionsPerBeat)
-    }
-
+    // reduce to the smallest denominator by finding the 
+    reduced = this.reduce(numerator, possibleFractionsPerBeat)
+  
     if (reduced[0] == reduced[1]) {
       //console.log(`both sides equal: ${reduced[0]} / ${reduced[1]}`);
       reduced[0] = 0
       reduced[1] = 1
-      beat += 1
+      beat += 1;
     }
-
+  
     return {
-      "beat": beat,
+      "beat" : beat,
       "numerator": reduced[0],
-      "denominator": reduced[1],
+      "denominator": reduced[1]
     }
   },
 
